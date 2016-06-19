@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-import Rectangle
+
+from rectangle import *
 
 class Image:
     def __init__(self, image):
