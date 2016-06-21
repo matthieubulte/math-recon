@@ -1,4 +1,4 @@
-%matplotlib inline
+#%matplotlib inline
 
 import tensorflow as tf
 
@@ -9,12 +9,24 @@ from pieces.fraction import *
 from pieces.symbol import *
 from classifier import *
 
-plt.rcParams['figure.figsize'] = (15, 5)
+import sys
+
+path = None
+for (index, value) in enumerate(sys.argv):
+    if value == "--image":
+        if index + 1 < len(sys.argv):
+            path = sys.argv[index + 1]
+        else:
+            print "Image path not provided"
+            exit()
+
+if path is None:
+    path = "images/fraction_3.png"
 
 
-image = Image.from_file('images/fraction_3.png')
+plt.rcParams["figure.figsize"] = (15, 5)
 
-image.show()
+image = Image.from_file(path)
 
 rectangles = prepare_rectangles(image.find_rectangles())
 
@@ -31,4 +43,25 @@ classifier = Classifier(session)
 classifier.restore_model_from("model.ckpt")
 
 
-print block.to_latex(image, classifier)
+equation = block.to_latex(image, classifier)
+
+template = """
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+
+\\begin{document}
+\\begin{figure}[ht!]
+\centering
+\includegraphics[width=90mm] {%s}
+\end{figure}
+\\begin{align*}
+%s
+\end{align*}
+\end{document}
+"""
+
+print template % (path, equation)
