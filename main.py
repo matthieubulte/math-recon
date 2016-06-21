@@ -36,7 +36,6 @@ block.resolve_fractions()
 block.resolve_exponents()
 block.resolve_indices()
 
-
 session = tf.InteractiveSession()
 
 classifier = Classifier(session)

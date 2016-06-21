@@ -53,6 +53,19 @@ class Image:
     def resize(self, width, height):
         return Image(cv2.resize(self.image, (width, height), interpolation=cv2.INTER_AREA))
 
+    def center(self):
+        width, height = self.image.shape[:2]
+        size = max(width, height)
+
+        average_color = np.average(np.average(self.image, axis=0), axis=0)
+
+        new_image = np.zeros((size, size, 3), np.uint8)
+        new_image[:] = (int(average_color[0]), int(average_color[1]), int(average_color[2]))
+        new_image[(size - width) / 2:(size + width) / 2, (size - height) / 2:(size + height) / 2] = self.image
+
+        return Image(new_image)
+
+
     def write_to(self, path):
         cv2.imwrite(path, self.image)
 
