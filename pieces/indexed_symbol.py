@@ -30,5 +30,9 @@ class IndexedSymbol(Top):
 
         self.index.draw(target, text + "i")
 
-    def to_latex(self):
-        return self.base.to_latex() + "_{" + self.index.to_latex() + "}"
+    def to_latex(self, image, classifier):
+        return self.base.to_latex(image, classifier) + "_{" + self.index.to_latex(image, classifier) + "}"
+
+    def traverse(self, function):
+        self.base.traverse(function)
+        self.index.traverse(function)

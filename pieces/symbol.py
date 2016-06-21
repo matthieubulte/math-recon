@@ -41,5 +41,8 @@ class Symbol(Top):
 
         return False, 0
 
-    def to_latex(self):
-        return "?"
+    def to_latex(self, image, classifier):
+        return str(classifier.classify(image.sub_image(self.bounding_rectangle).resize(28, 28).image))
+
+    def traverse(self, function):
+        function(self.bounding_rectangle)

@@ -23,7 +23,10 @@ class Top:
     def is_index(self, other):
         raise NotImplementedError
 
-    def to_latex(self):
+    def to_latex(self, image, classifier):
+        raise NotImplementedError
+
+    def traverse(self, function):
         raise NotImplementedError
 
     def __str__(self):

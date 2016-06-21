@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 from rectangle import *
 
@@ -45,6 +46,18 @@ class Image:
 
     def height(self):
         return self.image.shape[0]
+
+    def sub_image(self, rectangle):
+        return Image(self.image[rectangle.top : rectangle.bottom, rectangle.left : rectangle.right])
+
+    def resize(self, width, height):
+        return Image(cv2.resize(self.image, (width, height), interpolation=cv2.INTER_AREA))
+
+    def write_to(self, path):
+        cv2.imwrite(path, self.image)
+
+    def show(self):
+        plt.imshow(self.image)
 
     @staticmethod
     def from_file(image_path):

@@ -54,8 +54,12 @@ class Block(Top):
     def is_index(self, other):
         return False, 0
 
-    def to_latex(self):
-        return " ".join([top.to_latex() for top in self.children])
+    def to_latex(self, image, classifier):
+        return " ".join([top.to_latex(image, classifier) for top in self.children])
+
+    def traverse(self, function):
+        for top in self.children:
+            top.traverse(function)
 
     @staticmethod
     def __exponent_predicate(center, other_rectangle):

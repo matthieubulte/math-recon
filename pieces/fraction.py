@@ -35,8 +35,12 @@ class Fraction(Top):
     def is_index(self, other):
         return False, 0
 
-    def to_latex(self):
-        return "\\frac{" + self.over.to_latex() + "}{" + self.under.to_latex() + "}"
+    def to_latex(self, image, classifier):
+        return "\\frac{" + self.over.to_latex(image, classifier) + "}{" + self.under.to_latex(image, classifier) + "}"
+
+    def traverse(self, function):
+        self.over.traverse(function)
+        self.under.traverse(function)
 
 def from_fraction_rectangle(fraction_symbol, tops):
     over = []
