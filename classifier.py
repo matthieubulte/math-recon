@@ -3,8 +3,9 @@ import numpy as np
 import tensorflow as tf
 
 class Classifier:
-    def __init__(self, session):
+    def __init__(self, session, labels_count):
         self.session = session
+        self.labels_count = labels_count
         self.__build_network_structure()
 
     def __build_network_structure(self):
@@ -37,10 +38,20 @@ class Classifier:
         h_fc1_drop = tf.nn.dropout(h_fc1, self.keep_prob)
 
         # second densly connected layer
-        W_fc2 = Classifier.weights([1024, 10], "W_fc2")
-        b_fc2 = Classifier.biases([10], "b_fc2")
+        W_fc2 = Classifier.weights([1024, self.labels_count], "W_fc2")
+        b_fc2 = Classifier.biases([self.labels_count], "b_fc2")
 
         self.y_conv = tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
+
+        # training part
+        self.y_ = tf.placeholder(tf.float32, shape=[None, self.labels_count])
+
+        cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y_ * tf.log(self.y_conv), reduction_indices=[1]))
+        self.train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+        correct_prediction = tf.equal(tf.argmax(self.y_conv,1), tf.argmax(self.y_,1))
+        self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+        self.session.run(tf.initialize_all_variables())
 
     def restore_model_from(self, path):
         saver = tf.train.Saver()
@@ -50,16 +61,28 @@ class Classifier:
         saver = tf.train.Saver()
         saver.save(self.session, path)
 
-    def classify(self, image, keep_prob=1.0):
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = cv2.GaussianBlur(image, (5,5), 0)
-        image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+    def train(self, next_batch, batches, path=None):
+        if path is not None:
+            saver = tf.train.Saver()
 
-        image = np.float32(np.array([image.flatten()]))
-        image /= np.amax(image)
+        for i in range(batches):
+          batch = next_batch()
+          if i%100 == 0:
+            train_accuracy = self.accuracy.eval(feed_dict={
+                self.x:batch[0], self.y_: batch[1], self.keep_prob: 1.0})
+            print("step %d, training accuracy %g"%(i, train_accuracy))
 
+            if path is not None:
+                saver.save(self.session, path)
+
+          self.train_step.run(feed_dict={self.x: batch[0], self.y_: batch[1], self.keep_prob: 0.5})
+
+    def evaluate_accuracy(self, batch):
+        return self.accuracy.eval(feed_dict={self.x:batch[0], self.y_: batch[1], self.keep_prob: 1.0})
+
+    def classify(self, image):
         prediction = tf.argmax(self.y_conv, 1)
-        result = self.session.run(prediction, feed_dict={self.x : image, self.keep_prob : keep_prob})
+        result = self.session.run(prediction, feed_dict={self.x : [image], self.keep_prob: 1.0})
 
         return result[0]
 

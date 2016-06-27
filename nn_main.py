@@ -2,46 +2,62 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
+from shapes.image import *
 from classifier import Classifier
 
 session = tf.InteractiveSession()
 
-classifier = Classifier(session)
-classifier.restore_model_from("model.ckpt")
+# labels are: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+classifier = Classifier(session, 10)
 
-for i in range(0, 16):
-    path = "images/symbols/sym_%s.png" % i
-    image = cv2.imread(path)
+# read dataset
+images = []
+labels = []
+for i in range(1, 11):
+    for j in range(1, 56):
+        f = "dataset/img%03d-%03d.png" % (i, j)
 
-    print("%s: %s" % (path, classifier.classify(image)))
+        label = np.zeros(10)
+        label[i - 1] = 1
 
+        ims, lbls = Image.from_file(f).generate_training_items(label)
+        images += ims
+        labels += lbls
 
-return
+images = np.array(images)
+labels = np.array(labels)
 
+# dataset utils
+dataset_size = len(images)
+dataset_index = 0
 
-# TODO put the training part in the classifier class
+perm = np.arange(dataset_size)
+np.random.shuffle(perm)
+images = images[perm]
+labels = labels[perm]
 
-mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
-y_ = tf.placeholder(tf.float32, shape=[None, 10])
+def next_batch(size):
+    global dataset_index
+    global dataset_size
+    global images
+    global labels
+    global mnist
 
-cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y_conv), reduction_indices=[1]))
-train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-sess.run(tf.initialize_all_variables())
+    if dataset_index + size > dataset_size:
+        dataset_index = 0
 
-saver = tf.train.Saver()
+        perm = np.arange(dataset_size)
+        np.random.shuffle(perm)
+        images = images[perm]
+        labels = labels[perm]
 
-for i in range(20000):
-  batch = mnist.train.next_batch(50)
-  if i%100 == 0:
-    train_accuracy = accuracy.eval(feed_dict={
-        x:batch[0], y_: batch[1], keep_prob: 1.0})
-    print("step %d, training accuracy %g"%(i, train_accuracy))
+    start = dataset_index
+    dataset_index += size
 
-    save_path = saver.save(sess, "model.ckpt")
-    print("saved")
-  train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+    return images[start:dataset_index], labels[start:dataset_index]
 
-print("test accuracy %g"%accuracy.eval(feed_dict={
-    x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+def next_model(models_dir):
+    from os import listdir
+    return models_dir + "model_%s.ckpt" % (max([int(f[6:].split(".")[0]) for f in listdir(models_dir) if f.startswith("model")]) + 1)
+
+classifier.train(lambda: next_batch(64), 20000, path=next_model("models/"))

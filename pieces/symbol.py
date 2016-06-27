@@ -42,7 +42,11 @@ class Symbol(Top):
         return False, 0
 
     def to_latex(self, image, classifier):
-        return str(classifier.classify(image.sub_image(self.bounding_rectangle).resize(28, 28).image))
+        import string
+        alphabet = string.digits
+        #alphabet = alphabet + string.ascii_lowercase
+        #alphabet = alphabet + string.ascii_uppercase
+        return alphabet[classifier.classify(image.sub_image(self.bounding_rectangle).center().resize(28, 28).flatten())]
 
     def traverse(self, function):
         function(self.bounding_rectangle)

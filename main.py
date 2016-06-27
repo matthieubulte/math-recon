@@ -12,6 +12,8 @@ from classifier import *
 import sys
 
 path = None
+model = None
+
 for (index, value) in enumerate(sys.argv):
     if value == "--image":
         if index + 1 < len(sys.argv):
@@ -20,8 +22,16 @@ for (index, value) in enumerate(sys.argv):
             print "Image path not provided"
             exit()
 
-if path is None:
-    path = "images/fraction_3.png"
+    if value == "--model":
+        if index + 1 < len(sys.argv):
+            model = sys.argv[index + 1]
+        else:
+            print "Model path not provided"
+            exit()
+
+
+if path is None or model is None:
+    exit()
 
 
 plt.rcParams["figure.figsize"] = (15, 5)
@@ -38,9 +48,8 @@ block.resolve_indices()
 
 session = tf.InteractiveSession()
 
-classifier = Classifier(session)
-classifier.restore_model_from("model.ckpt")
-
+classifier = Classifier(session, 10)
+classifier.restore_model_from(model)
 
 equation = block.to_latex(image, classifier)
 
