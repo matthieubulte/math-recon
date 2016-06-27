@@ -43,7 +43,7 @@ class Image:
         h, w = self.image.shape[:2]
 
         rotation_matrix = cv2.getRotationMatrix2D((w/2, h/2), angle, 1)
-        return Image(cv2.warpAffine(self.image, rotation_matrix, (w, h)))
+        return Image(cv2.warpAffine(self.image, rotation_matrix, (w, h), borderMode=cv2.BORDER_CONSTANT, borderValue=(255,255,255)))
 
     def distort(self, rate):
         def maybe_flip(rate, x):
@@ -81,18 +81,16 @@ class Image:
         image /= np.amax(image)
         return 1 - image
 
-    def generate_training_items(self, label):
-        images = [
-            self.rotate(5).flatten(),
-            self.rotate(10).flatten(),
-            self.rotate(-10).flatten(),
-            self.rotate(-5).flatten(),
-            self.distort(0.05).flatten(),
-            self.distort(0.1).flatten()
+    def generate_training_items(self):
+        return [
+            self,
+            self.rotate(10),
+            self.rotate(20),
+            self.rotate(-10),
+            self.rotate(-20),
+            self.distort(0.1),
+            self.distort(0.2)
         ]
-
-        labels = [label] * 7
-        return images, labels
 
     def width(self):
         return self.image.shape[1]

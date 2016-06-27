@@ -65,7 +65,7 @@ class Classifier:
         if path is not None:
             saver = tf.train.Saver()
 
-        for i in range(batches):
+        for i in xrange(batches):
           batch = next_batch()
           if i%100 == 0:
             train_accuracy = self.accuracy.eval(feed_dict={
