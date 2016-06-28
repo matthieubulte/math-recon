@@ -81,17 +81,6 @@ class Image:
         image /= np.amax(image)
         return 1 - image
 
-    def generate_training_items(self):
-        return [
-            self,
-            self.rotate(10),
-            self.rotate(20),
-            self.rotate(-10),
-            self.rotate(-20),
-            self.distort(0.1),
-            self.distort(0.2)
-        ]
-
     def width(self):
         return self.image.shape[1]
 
