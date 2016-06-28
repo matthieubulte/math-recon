@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 class Classifier:
-    def __init__(self, session, labels_count, summary_path="summaries/"):
+    def __init__(self, session, labels_count, summary_path="/tmp/summaries/"):
         self.session = session
         self.labels_count = labels_count
 
@@ -15,23 +15,22 @@ class Classifier:
         self.session.run(tf.initialize_all_variables())
 
     def __build_summaries(self, summary_path):
-        tf.scalar_summary('accuracy', self.accuracy)
-
-
+        tf.scalar_summary("accuracy", self.accuracy)
 
         self.summaries = tf.merge_all_summaries()
-        self.train_writer = tf.train.SummaryWriter(summary_path + 'train', self.session.graph)
-        self.test_writer = tf.train.SummaryWriter(summary_path + 'test')
+        self.train_writer = tf.train.SummaryWriter(summary_path + "train", self.session.graph)
+        self.test_writer = tf.train.SummaryWriter(summary_path + "test")
 
 
     def __build_network_structure(self):
         self.x = tf.placeholder(tf.float32, shape=[None, 784], name="x")
 
+        # reshape input tensor into an image
+        x_im = tf.reshape(self.x, [-1, 28, 28, 1])
+
         # first conv layer
         W_conv1 = Classifier.weights([5, 5, 1, 32], "W_conv1") # 32 times 5 * 5 patches
         b_conv1 = Classifier.biases([32], "b_conv1")
-
-        x_im = tf.reshape(self.x, [-1, 28, 28, 1])
 
         h_conv1 = tf.nn.relu(Classifier.conv2d(x_im, W_conv1) + b_conv1)
         h_pool1 = Classifier.max_pool_2x2(h_conv1)
@@ -47,9 +46,10 @@ class Classifier:
         W_fc1 = Classifier.weights([7 * 7 * 64, 1024], "W_fc1")
         b_fc1 = Classifier.biases([1024], "b_fc1")
 
-        h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
+        h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
         h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
+        # add dropout between the densly connected layers
         self.keep_prob = tf.placeholder(tf.float32)
         h_fc1_drop = tf.nn.dropout(h_fc1, self.keep_prob)
 
@@ -62,11 +62,14 @@ class Classifier:
         # training part
         self.y_ = tf.placeholder(tf.float32, shape=[None, self.labels_count])
 
+        # delta to target label
         cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y_ * tf.log(self.y_conv), reduction_indices=[1]))
-        regularizers = (tf.nn.l2_loss(W_fc1) + tf.nn.l2_loss(b_fc1) +
+
+        # regularize the densly connected weights
+        regularizers = 0.0005 * (tf.nn.l2_loss(W_fc1) + tf.nn.l2_loss(b_fc1) +
                         tf.nn.l2_loss(W_fc2) + tf.nn.l2_loss(b_fc2))
 
-        loss = cross_entropy + 0.0005 * regularizers
+        loss = cross_entropy + regularizers
 
         self.train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
         correct_prediction = tf.equal(tf.argmax(self.y_conv,1), tf.argmax(self.y_,1))
@@ -123,9 +126,9 @@ class Classifier:
 
     @staticmethod
     def conv2d(x, W):
-      return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+      return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding="SAME")
 
     @staticmethod
     def max_pool_2x2(x):
       return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
-                            strides=[1, 2, 2, 1], padding='SAME')
+                            strides=[1, 2, 2, 1], padding="SAME")

@@ -1,5 +1,3 @@
-#%matplotlib inline
-
 import tensorflow as tf
 
 from shapes.image import *
@@ -7,7 +5,7 @@ from shapes.rectangle import *
 from pieces.block import *
 from pieces.fraction import *
 from pieces.symbol import *
-from classifier import *
+from learning.classifier import *
 
 import sys
 

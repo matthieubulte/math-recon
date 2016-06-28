@@ -1,7 +1,6 @@
 from shapes.image import *
 
 class DataSet:
-
     def __init__(self, directory, batch_size=64, test_part=0.1):
         images, labels = DataSet.__load_data(directory)
         images, labels = DataSet.__shuffle(images, labels)
