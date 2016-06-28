@@ -13,6 +13,6 @@ def next_model(models_dir):
 session = tf.InteractiveSession()
 
 classifier = Classifier(session, 10)
-dataset = DataSet("dataset_2/", batch_size=64, test_part=0.1)
+dataset = DataSet("dataset_2/", batch_size=32, test_part=0.2)
 
-classifier.train(lambda: dataset.next_batch(), 1000, path=next_model("models/"))
+classifier.train(dataset, 500, path=next_model("models/"))

@@ -3,10 +3,26 @@ import numpy as np
 import tensorflow as tf
 
 class Classifier:
-    def __init__(self, session, labels_count):
+    def __init__(self, session, labels_count, summary_path="summaries/"):
         self.session = session
         self.labels_count = labels_count
+
         self.__build_network_structure()
+        self.__build_summaries(summary_path)
+
+        self.saver = tf.train.Saver()
+
+        self.session.run(tf.initialize_all_variables())
+
+    def __build_summaries(self, summary_path):
+        tf.scalar_summary('accuracy', self.accuracy)
+
+
+
+        self.summaries = tf.merge_all_summaries()
+        self.train_writer = tf.train.SummaryWriter(summary_path + 'train', self.session.graph)
+        self.test_writer = tf.train.SummaryWriter(summary_path + 'test')
+
 
     def __build_network_structure(self):
         self.x = tf.placeholder(tf.float32, shape=[None, 784], name="x")
@@ -47,35 +63,44 @@ class Classifier:
         self.y_ = tf.placeholder(tf.float32, shape=[None, self.labels_count])
 
         cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y_ * tf.log(self.y_conv), reduction_indices=[1]))
-        self.train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+        regularizers = (tf.nn.l2_loss(W_fc1) + tf.nn.l2_loss(b_fc1) +
+                        tf.nn.l2_loss(W_fc2) + tf.nn.l2_loss(b_fc2))
+
+        loss = cross_entropy + 0.0005 * regularizers
+
+        self.train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
         correct_prediction = tf.equal(tf.argmax(self.y_conv,1), tf.argmax(self.y_,1))
         self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-        self.session.run(tf.initialize_all_variables())
-
     def restore_model_from(self, path):
-        saver = tf.train.Saver()
-        saver.restore(self.session, path)
+        self.saver.restore(self.session, path)
 
     def save_model_to(self, path):
-        saver = tf.train.Saver()
-        saver.save(self.session, path)
+        self.saver.save(self.session, path)
 
-    def train(self, next_batch, batches, path=None):
+    def __make_feed(self, dataset, test):
+        if test:
+            return { self.x:dataset.test_images, self.y_: dataset.test_labels, self.keep_prob: 1.0}
+        else:
+            batch = dataset.next_batch()
+            return {self.x: batch[0], self.y_: batch[1], self.keep_prob: 0.5}
+
+    def __save_model(self, path):
         if path is not None:
-            saver = tf.train.Saver()
+            self.saver.save(self.session, path)
 
+    def train(self, dataset, batches, path=None):
         for i in xrange(batches):
-          batch = next_batch()
-          if i%100 == 0:
-            train_accuracy = self.accuracy.eval(feed_dict={
-                self.x:batch[0], self.y_: batch[1], self.keep_prob: 1.0})
-            print("step %d, training accuracy %g"%(i, train_accuracy))
+            if i % 10 == 0:
+                test_accuracy, summary = self.session.run([self.accuracy, self.summaries], feed_dict=self.__make_feed(dataset, True))
+                self.test_writer.add_summary(summary, i)
+                self.__save_model(path)
 
-            if path is not None:
-                saver.save(self.session, path)
+                print "Test accuracy at step %s: %s" % (i, test_accuracy)
 
-          self.train_step.run(feed_dict={self.x: batch[0], self.y_: batch[1], self.keep_prob: 0.5})
+            else:
+                _, summary = self.session.run([self.train_step, self.summaries], feed_dict=self.__make_feed(dataset, False))
+                self.train_writer.add_summary(summary, i)
 
     def evaluate_accuracy(self, batch):
         return self.accuracy.eval(feed_dict={self.x:batch[0], self.y_: batch[1], self.keep_prob: 1.0})
