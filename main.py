@@ -11,7 +11,7 @@ import sys
 
 path = None
 model = None
-
+"""
 for (index, value) in enumerate(sys.argv):
     if value == "--image":
         if index + 1 < len(sys.argv):
@@ -30,9 +30,12 @@ for (index, value) in enumerate(sys.argv):
 
 if path is None or model is None:
     exit()
+"""
+
+path = "../images/t0.jpg"
+model = "models/model_1.ckpt"
 
 
-plt.rcParams["figure.figsize"] = (15, 5)
 
 image = Image.from_file(path)
 
@@ -46,7 +49,7 @@ block.resolve_indices()
 
 session = tf.InteractiveSession()
 
-classifier = Classifier(session, 10)
+classifier = Classifier(session, 36)
 classifier.restore_model_from(model)
 
 equation = block.to_latex(image, classifier)

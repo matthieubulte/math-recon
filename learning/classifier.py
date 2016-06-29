@@ -3,11 +3,11 @@ import numpy as np
 import tensorflow as tf
 
 class Classifier:
-    def __init__(self, session, labels_count, summary_path="/tmp/summaries/"):
+    def __init__(self, session, labels_count, summary_path="/tmp/summaries/", regularization_factor=5e-4, learning_rate=1e-4):
         self.session = session
         self.labels_count = labels_count
 
-        self.__build_network_structure()
+        self.__build_network_structure(learning_rate, regularization_factor)
         self.__build_summaries(summary_path)
 
         self.saver = tf.train.Saver()
@@ -16,13 +16,14 @@ class Classifier:
 
     def __build_summaries(self, summary_path):
         tf.scalar_summary("accuracy", self.accuracy)
+        tf.scalar_summary("loss", self.loss)
 
         self.summaries = tf.merge_all_summaries()
         self.train_writer = tf.train.SummaryWriter(summary_path + "train", self.session.graph)
         self.test_writer = tf.train.SummaryWriter(summary_path + "test")
 
 
-    def __build_network_structure(self):
+    def __build_network_structure(self, learning_rate, regularization_factor):
         self.x = tf.placeholder(tf.float32, shape=[None, 784], name="x")
 
         # reshape input tensor into an image
@@ -63,15 +64,15 @@ class Classifier:
         self.y_ = tf.placeholder(tf.float32, shape=[None, self.labels_count])
 
         # delta to target label
-        cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y_ * tf.log(self.y_conv), reduction_indices=[1]))
+        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y_ * tf.log(self.y_conv), reduction_indices=[1]))
 
         # regularize the densly connected weights
-        regularizers = 0.0005 * (tf.nn.l2_loss(W_fc1) + tf.nn.l2_loss(b_fc1) +
+        regularizers = regularization_factor * (tf.nn.l2_loss(W_fc1) + tf.nn.l2_loss(b_fc1) +
                         tf.nn.l2_loss(W_fc2) + tf.nn.l2_loss(b_fc2))
 
-        loss = cross_entropy + regularizers
+        self.loss = self.cross_entropy + regularizers
 
-        self.train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
+        self.train_step = tf.train.AdamOptimizer(learning_rate).minimize(self.loss)
         correct_prediction = tf.equal(tf.argmax(self.y_conv,1), tf.argmax(self.y_,1))
         self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 

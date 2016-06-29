@@ -34,12 +34,18 @@ class DataSet:
         # read dataset
         images = []
         labels = []
-        for i in xrange(1, 11):
+        for i in xrange(1, 63):
             for j in xrange(1, 55 * 6):
                 f = file_template % (i, j)
 
-                label = np.zeros(10)
-                label[i - 1] = 1
+                label_index = i - 1
+
+                # small letters should be classified the same as large letters
+                if i >= 37:
+                    label_index -= 26
+
+                label = np.zeros(36)
+                label[label_index] = 1
 
                 images.append(Image.from_file(f).flatten())
                 labels.append(label)

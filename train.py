@@ -12,7 +12,7 @@ def next_model(models_dir):
 
 session = tf.InteractiveSession()
 
-classifier = Classifier(session, 10, summaries="summaries/")
-dataset = DataSet("datasets/", batch_size=64, test_part=0.2)
+classifier = Classifier(session, 36, summary_path="summaries/", regularization_factor=5e-4, learning_rate=1e-4)
+dataset = DataSet("datasets/", batch_size=128, test_part=0.2)
 
-classifier.train(dataset, 500, path=next_model("models/"))
+classifier.train(dataset, 2000, path=next_model("models/"))

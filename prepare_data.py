@@ -24,9 +24,8 @@ def generate_training_items(image):
         make_distortions(image.rotate(10)) + \
         make_distortions(image.rotate(20))
 
-
 image_per_input = 15
-for i in xrange(1, 11):
+for i in xrange(1, 63):
     for j in xrange(1, 56):
         f = filename % (i, j)
         img = Image.from_file(source + f)
